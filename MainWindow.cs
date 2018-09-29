@@ -16,8 +16,8 @@ using System.Threading.Tasks;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-
-
+using System.IO;
+using System.Net;
 
 
 namespace CameraCapture
@@ -28,25 +28,12 @@ namespace CameraCapture
     public partial class MainWindow : System.Windows.Window
     {
         public bool IsExitCapture { get; set; }
-
-        public MainWindow()
-        {
-            this.InitializeComponent();
-        }
-
-
         /// <summary>
         /// カメラ画像を取得して次々に表示を切り替える
         /// </summary>
         public virtual void Capture(object state)
         {
-            var camera = new VideoCapture(0/*0番目のデバイスを指定*/)
-           {
-                // キャプチャする画像のサイズフレームレートの指定
-                FrameWidth = 1200, 
-                FrameHeight =2400,
-                Fps = 60
-            };
+            var camera = new VideoCapture(0/*0番目のデバイスを指定*/);
             
             using (var img = new Mat()) // 撮影した画像を受ける変数
             using (camera)
@@ -61,6 +48,7 @@ namespace CameraCapture
 
                     camera.Read(img); // Webカメラの読み取り（バッファに入までブロックされる
 
+                    //画像がないとき
                     if (img.Empty())
                     {
                         break;
@@ -69,35 +57,27 @@ namespace CameraCapture
                     this.Dispatcher.Invoke(() =>
                     {
                         this._Image.Source = img.ToWriteableBitmap(); // WPFに画像を表示
-                        img.SaveImage("C:/Users/Desktop/result.bmp");
-                        const string CAPTURE_PATH = "C:/Users/Desktop/result.bmp";
 
-                        var source = new BitmapImage(new Uri(CAPTURE_PATH));
-                       this.qr.Source = source;
-
-                     if (source != null)
-                    {
-                        // コードの解析
+                        // バーコード読み取り
+                        // WPFではZXing.Presentation名前空間のBarcodeReaderを使う
                        ZXing.Presentation.BarcodeReader reader = new ZXing.Presentation.BarcodeReader();
-                       ZXing.Result result = reader.Decode(qr.Source as BitmapImage);
-                      if (result != null)
-                      {
-                            MessageBox.Show(result.Text);
-                       } 
-                     }
 
+                       //nullだとエラーになるため
+                       if (_Image.Source as BitmapImage != null)
+                       {
+                           // WPFではBitmapImageかBitmapSourceを渡す
+                           ZXing.Result result = reader.Decode(_Image.Source as BitmapImage);
+                           if (result != null)
+                           {
+                               //QRコードの中身
+                               MessageBox.Show(result.Text);
+                           }
+                       }
                     });
-
-              
-
-                    
-                    
                 }
             }
         }
-
         // ---- EventHandlers ----
-
         /// <summary>
         /// Windowがロードされた時
         /// </summary>
@@ -105,35 +85,6 @@ namespace CameraCapture
         {
             ThreadPool.QueueUserWorkItem(this.Capture);
         }
-
-        /// <summary>
-        /// Exit Captureボタンが押され時
-        /// </summary>
-        protected virtual void Button_Click(object sender, RoutedEventArgs e)
-        {
-
-            this.IsExitCapture = true;
-
-            // 指定された画像ファイルをImageコントロール「Image1」に表示
-            // var source = new BitmapImage(new Uri("……省略（画像ファイルのパス）……"));
-            // this._Image.Source = source;
-
-        }
-
-        protected virtual void Button(object sender, RoutedEventArgs e)
-        {
-
-            
-
-            MessageBox.Show("efrwer");
-
-            // 指定された画像ファイルをImageコントロール「Image1」に表示
-            // var source = new BitmapImage(new Uri("……省略（画像ファイルのパス）……"));
-            // this._Image.Source = source;
-
-        }
-
-
 
     }
 }
