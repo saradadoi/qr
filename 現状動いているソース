@@ -1,0 +1,112 @@
+using OpenCvSharp;
+using OpenCvSharp.Extensions; // これ追加しておく
+using System.Threading;
+using System.Windows;
+using ZXing;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using WpfApplication2;
+using Microsoft.Win32;
+using System.Threading.Tasks;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Threading;
+using System.IO;
+using System.Net;
+
+
+namespace CameraCapture
+{
+    /// <summary>
+    /// MainWindow.xaml の相互作用ロジック
+    /// </summary>
+    public partial class MainWindow : System.Windows.Window
+    {
+        public bool IsExitCapture { get; set; }
+        const string CAPTURE_PATH = "C:/Users/クシャル/Desktop/result.bmp";
+        ZXing.Presentation.BarcodeReader reader ;
+
+        /// <summary>
+        /// カメラ画像を取得して次々に表示を切り替える
+        /// </summary>
+        public virtual void Capture(object state)
+        {
+            var camera = new VideoCapture(0/*0番目のデバイスを指定*/)
+           {
+                // キャプチャする画像のサイズフレームレートの指定
+                FrameWidth = 1200, 
+                FrameHeight =2400,
+                Fps = 60
+            };
+            
+            using (var img = new Mat()) // 撮影した画像を受ける変数
+            using (camera)
+            {
+                while (true)
+                {
+                    if (this.IsExitCapture)
+                    {
+                        this.Dispatcher.Invoke(() => this._Image.Source = null);
+                        break;
+                    }
+
+                    camera.Read(img); // Webカメラの読み取り（バッファに入までブロックされる
+
+                    if (img.Empty())
+                    {
+                        break;
+                    }
+
+                    this.Dispatcher.Invoke(async () =>
+                    {
+                        this._Image.Source = img.ToWriteableBitmap(); // WPFに画像を表示
+
+                       img.SaveImage(CAPTURE_PATH);//表示されている画像をパスに保存
+                        MemoryStream data = new MemoryStream(File.ReadAllBytes(CAPTURE_PATH));
+                        WriteableBitmap source = new WriteableBitmap(BitmapFrame.Create(data));
+                        data.Close();
+                        this.qr.Source = source;
+                        
+
+    //                 if (source != null)
+      //              {
+                        // バーコード読み取り
+                        // WPFではZXing.Presentation名前空間のBarcodeReaderを使う
+                       reader = new ZXing.Presentation.BarcodeReader();
+                           // WPFではBitmapImageかBitmapSourceを渡す
+
+         //              System.Threading.Thread.Sleep(1000);
+
+            //           ZXing.Result result = await Task.Run(() => reader.Decode(new BitmapImage(new Uri(CAPTURE_PATH))));
+             //         ZXing.Result result = await Task.Run(() => reader.Decode(new BitmapImage(new Uri("C:/Users/クシャル/Desktop/QR_Code1539088152.png"))));
+
+           //           System.Threading.Thread.Sleep(1000);
+
+                       ZXing.Result result = reader.Decode(source);
+                       if (result != null)
+                       {
+                           //QRコードの中身
+                           MessageBox.Show(result.Text);
+                       }   
+                    });
+                }
+            }
+        }
+
+        // ---- EventHandlers ----
+
+        /// <summary>
+        /// Windowがロードされた時
+        /// </summary>
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            ThreadPool.QueueUserWorkItem(this.Capture);
+        }
+
+    }
+}
