@@ -27,24 +27,27 @@ namespace CameraCapture
     /// </summary>
     public partial class MainWindow : System.Windows.Window
     {
-        public bool IsExitCapture { get; set; }
-        const string CAPTURE_PATH = "C:/Users/クシャル/Desktop/result.bmp";
-        ZXing.Presentation.BarcodeReader reader ;
+       public bool IsExitCapture { get; set; }
+       
+       //QRコードを保存する場所とファイル名を指定。
+       string CAPTURE_PATH = System.AppDomain.CurrentDomain.BaseDirectory + "result.bmp";
 
         /// <summary>
         /// カメラ画像を取得して次々に表示を切り替える
         /// </summary>
         public virtual void Capture(object state)
         {
-            var camera = new VideoCapture(0/*0番目のデバイスを指定*/)
+            //0番目のデバイスを指定
+            var camera = new VideoCapture(0)
            {
                 // キャプチャする画像のサイズフレームレートの指定
                 FrameWidth = 1200, 
                 FrameHeight =2400,
                 Fps = 60
             };
-            
-            using (var img = new Mat()) // 撮影した画像を受ける変数
+
+            // 撮影した画像を受ける変数
+            using (var img = new Mat()) 
             using (camera)
             {
                 while (true)
@@ -55,42 +58,44 @@ namespace CameraCapture
                         break;
                     }
 
-                    camera.Read(img); // Webカメラの読み取り（バッファに入までブロックされる
+                    // Webカメラの読み取り（バッファに入までブロックされる
+                    camera.Read(img); 
 
+                    //Webカメラが取れなかった場合
                     if (img.Empty())
                     {
                         break;
                     }
 
-                    this.Dispatcher.Invoke(async () =>
+                    //
+                    this.Dispatcher.Invoke(() =>
                     {
-                        this._Image.Source = img.ToWriteableBitmap(); // WPFに画像を表示
 
-                       img.SaveImage(CAPTURE_PATH);//表示されている画像をパスに保存
+                        // WPFにWebカメラで読み取った画像を表示
+                        this._Image.Source = img.ToWriteableBitmap(); 
+
+                       //Webカメラで読み取った画像を指定したパスに保存
+                       img.SaveImage(CAPTURE_PATH);
+
                         MemoryStream data = new MemoryStream(File.ReadAllBytes(CAPTURE_PATH));
+
+                        // WPFではBitmapImageかBitmapSourceを渡す
                         WriteableBitmap source = new WriteableBitmap(BitmapFrame.Create(data));
+                        //読み取った画像を使用できるように他で使用できるようにclose;
                         data.Close();
-                        this.qr.Source = source;
-                        
 
-    //                 if (source != null)
-      //              {
-                        // バーコード読み取り
-                        // WPFではZXing.Presentation名前空間のBarcodeReaderを使う
-                       reader = new ZXing.Presentation.BarcodeReader();
-                           // WPFではBitmapImageかBitmapSourceを渡す
 
-         //              System.Threading.Thread.Sleep(1000);
+                       // バーコード読み取り
+                       // WPFではZXing.Presentation名前空間のBarcodeReaderを使う
+                        ZXing.Presentation.BarcodeReader reader = new ZXing.Presentation.BarcodeReader();
 
-            //           ZXing.Result result = await Task.Run(() => reader.Decode(new BitmapImage(new Uri(CAPTURE_PATH))));
-             //         ZXing.Result result = await Task.Run(() => reader.Decode(new BitmapImage(new Uri("C:/Users/クシャル/Desktop/QR_Code1539088152.png"))));
-
-           //           System.Threading.Thread.Sleep(1000);
-
+                       //QRコード解析
                        ZXing.Result result = reader.Decode(source);
+
+                       // QRコード正常に読み込んだ場合、resultはnullではなくなる。
                        if (result != null)
                        {
-                           //QRコードの中身
+                           // result.TextがQRコードの内容
                            MessageBox.Show(result.Text);
                        }   
                     });
@@ -102,6 +107,7 @@ namespace CameraCapture
 
         /// <summary>
         /// Windowがロードされた時
+        /// ※消すとエラーになる。WPFのお決まり？
         /// </summary>
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
