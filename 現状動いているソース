@@ -3,22 +3,8 @@ using OpenCvSharp.Extensions; // これ追加しておく
 using System.Threading;
 using System.Windows;
 using ZXing;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using WpfApplication2;
-using Microsoft.Win32;
-using System.Threading.Tasks;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Threading;
 using System.IO;
-using System.Net;
-
 
 namespace CameraCapture
 {
@@ -27,27 +13,20 @@ namespace CameraCapture
     /// </summary>
     public partial class MainWindow : System.Windows.Window
     {
-       public bool IsExitCapture { get; set; }
-       
-       //QRコードを保存する場所とファイル名を指定。
-       string CAPTURE_PATH = System.AppDomain.CurrentDomain.BaseDirectory + "result.bmp";
+        public bool IsExitCapture { get; set; }
+        //QRコードを保存する場所とファイル名を指定。
+        string CAPTURE_PATH = System.AppDomain.CurrentDomain.BaseDirectory + "result.bmp";
 
         /// <summary>
         /// カメラ画像を取得して次々に表示を切り替える
         /// </summary>
         public virtual void Capture(object state)
         {
-            //0番目のデバイスを指定
-            var camera = new VideoCapture(0)
-           {
-                // キャプチャする画像のサイズフレームレートの指定
-                FrameWidth = 1200, 
-                FrameHeight =2400,
-                Fps = 60
-            };
+            //0番目のデバイスカメラを指定
+            var camera = new VideoCapture(0);
 
             // 撮影した画像を受ける変数
-            using (var img = new Mat()) 
+            using (var img = new Mat())
             using (camera)
             {
                 while (true)
@@ -59,7 +38,7 @@ namespace CameraCapture
                     }
 
                     // Webカメラの読み取り（バッファに入までブロックされる
-                    camera.Read(img); 
+                    camera.Read(img);
 
                     //Webカメラが取れなかった場合
                     if (img.Empty())
@@ -67,15 +46,14 @@ namespace CameraCapture
                         break;
                     }
 
-                    //
                     this.Dispatcher.Invoke(() =>
                     {
 
                         // WPFにWebカメラで読み取った画像を表示
-                        this._Image.Source = img.ToWriteableBitmap(); 
+                        this._Image.Source = img.ToWriteableBitmap();
 
-                       //Webカメラで読み取った画像を指定したパスに保存
-                       img.SaveImage(CAPTURE_PATH);
+                        //Webカメラで読み取った画像を指定したパスに保存
+                        img.SaveImage(CAPTURE_PATH);
 
                         MemoryStream data = new MemoryStream(File.ReadAllBytes(CAPTURE_PATH));
 
@@ -84,26 +62,14 @@ namespace CameraCapture
                         //読み取った画像を使用できるように他で使用できるようにclose;
                         data.Close();
 
+                        //QRコード解析する部分
+                        QR_analysis(source);
 
-                       // バーコード読み取り
-                       // WPFではZXing.Presentation名前空間のBarcodeReaderを使う
-                        ZXing.Presentation.BarcodeReader reader = new ZXing.Presentation.BarcodeReader();
-
-                       //QRコード解析
-                       ZXing.Result result = reader.Decode(source);
-
-                       // QRコード正常に読み込んだ場合、resultはnullではなくなる。
-                       if (result != null)
-                       {
-                           // result.TextがQRコードの内容
-                           MessageBox.Show(result.Text);
-                       }   
                     });
                 }
             }
         }
 
-        // ---- EventHandlers ----
 
         /// <summary>
         /// Windowがロードされた時
@@ -112,6 +78,50 @@ namespace CameraCapture
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             ThreadPool.QueueUserWorkItem(this.Capture);
+        }
+
+        private void Button1_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+      
+        /// <summary>
+        /// QRコード解析する部分
+        /// </summary>
+        /// <param name="source"></param>
+        void QR_analysis(WriteableBitmap source)
+        {
+            // バーコード読み取り
+            // WPFではZXing.Presentation名前空間のBarcodeReaderを使う
+            ZXing.Presentation.BarcodeReader reader = new ZXing.Presentation.BarcodeReader();
+
+            //QRコード解析
+            Result result = reader.Decode(source);
+
+            // QRコード正常に読み込んだ場合、resultはnullではなくなる。
+            if (result != null)
+            {
+                //読み込んだデータがQRの場合、
+                if (result.BarcodeFormat.ToString() == "QR_CODE")
+                {
+                    //読み込んだQRコードを変換する。
+                    QR_conversion(result);
+                }
+
+            }
+
+        }
+
+        /// <summary>
+        /// 読み込んだQRコードを変換する。
+        /// </summary>
+        /// <param name="result"></param>
+        void QR_conversion(Result result)
+        {
+            // result.TextがQRコードの内容
+            MessageBox.Show(result.Text);
+
         }
 
     }
