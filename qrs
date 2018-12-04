@@ -1,0 +1,66 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
+using System.Drawing;
+using ZXing;
+using System.IO;
+
+
+namespace csGenQRCode
+{
+    /// <summary>
+    /// MainWindow.xaml の相互作用ロジック
+    /// </summary>
+    public partial class MainWindow : Window
+    {
+        public MainWindow()
+        {
+            InitializeComponent();
+        }
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            BarcodeWriter qrcode = new BarcodeWriter
+            {
+                // 出力するコードの形式をQRコードに選択
+                Format = BarcodeFormat.QR_CODE,
+                Options = new ZXing.QrCode.QrCodeEncodingOptions
+                {
+                    // QRコードの信頼性
+                    ErrorCorrection = ZXing.QrCode.Internal.ErrorCorrectionLevel.M,
+                    // 日本語を表示したい場合シフトJISを指定
+                    //CharacterSet = "Shift_JIS",
+                    // デフォルト
+                    CharacterSet = "ISO-8859-1",
+                    // QRコードのサイズ決定
+                    Height = 160,
+                    Width = 160,
+                    // QRコード周囲の余白の大きさ
+                    Margin = 4
+                }
+            };
+
+   
+    /*       var source = new BitmapImage();
+           source.BeginInit();
+           source.UriSource = new Uri("file://D:\\Image_171115\\deltaFlyer.png");
+           source.EndInit();
+           qr_kakunin.Source = source;*/
+
+
+            qr_kakunin.Source = qrcode.Write("http://den-noh.hatenablog.com/");
+ 
+        
+        }
+    }
+}
