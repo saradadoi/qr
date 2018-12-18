@@ -1,0 +1,87 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
+using System.Drawing;
+using ZXing;
+using System.IO;
+using System.Threading;
+
+
+namespace csGenQRCode
+{
+    /// <summary>
+    /// MainWindow.xaml の相互作用ロジック
+    /// </summary>
+    public partial class MainWindow : Window
+
+    {
+        public MainWindow()
+        {
+            InitializeComponent();
+        }
+
+ 
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+ 
+        BarcodeWriter qrcode = new BarcodeWriter
+        {
+            // 出力するコードの形式をQRコードに選択
+            Format = BarcodeFormat.QR_CODE,
+            Options = new ZXing.QrCode.QrCodeEncodingOptions
+            {
+                // QRコードの信頼性
+                ErrorCorrection = ZXing.QrCode.Internal.ErrorCorrectionLevel.M,
+                // 日本語を表示したい場合シフトJISを指定
+                //CharacterSet = "Shift_JIS",
+                // デフォルト
+                CharacterSet = "ISO-8859-1",
+                // QRコードのサイズ決定
+                Height = 160,
+                Width = 160,
+                // QRコード周囲の余白の大きさ
+                Margin = 4
+            }
+        };
+
+
+            string CAPTURE_PATH = System.AppDomain.CurrentDomain.BaseDirectory + "result.bmp";
+           // QRCodeEncoder qrEnc = new QRCodeEncoder();
+ //           Image image;
+          //  image = qrEnc.Encode("http:www.atmarkit.co.jp/");
+    /*       var source = new BitmapImage();
+           source.BeginInit();
+           source.UriSource = new Uri("file://D:\\Image_171115\\deltaFlyer.png");
+           source.EndInit();
+           qr_kakunin.Source = source;*/
+            
+            // ZXingで、QRコード生成
+            System.Drawing.Bitmap source = qrcode.Write("https://hogexy.net/");
+
+            // Bitmapクラスを、WPFのイメージボックスのImageSourceクラスに変換しQRコードを表示
+            //CreateBitmapSourceFromHBitmap()で変換する
+            IntPtr hbitmap = source.GetHbitmap();
+            qr_kakunin.Source = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
+          //  source.SaveImage(CAPTURE_PATH);
+
+
+            
+
+           // qr_kakunin.Source = qrcode.Write("http://den-noh.hatenablog.com/");
+ 
+        
+        }
+    }
+}
